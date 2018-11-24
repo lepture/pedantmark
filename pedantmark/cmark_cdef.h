@@ -63,8 +63,6 @@ cmark_node *cmark_parser_finish(cmark_parser *parser);
 #define CMARK_OPT_FULL_INFO_STRING ...
 #define CMARK_OPT_UNSAFE ...
 
-
-// syntax_extension.h
 typedef struct cmark_syntax_extension cmark_syntax_extension;
 
 // cmark-gfm-extension_api.h

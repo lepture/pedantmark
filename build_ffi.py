@@ -2,7 +2,7 @@ import cffi
 
 ffi = cffi.FFI()
 
-with open('pedantmark/cdef.h', 'r') as f:
+with open('pedantmark/cmark_cdef.h', 'r') as f:
     CDEF_H = f.read()
 
 MODULE_H = '''

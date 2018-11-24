@@ -1,4 +1,4 @@
-from .cmark import markdown, html
+from .api import markdown, html
 from .consts import OPTIONS, EXTENSIONS
 
 __all__ = ['markdown', 'html', 'OPTIONS', 'EXTENSIONS']
