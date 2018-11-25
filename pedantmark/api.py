@@ -1,4 +1,5 @@
 from ._cmark import lib, ffi
+from .extern import BaseRenderer
 
 
 #: Include a `data-sourcepos` attribute on all block elements.
@@ -127,7 +128,9 @@ def get_options(*options):
 
 
 def _render_root(renderer, root, options, extensions, width):
-    if renderer == 'html':
+    if isinstance(renderer, BaseRenderer):
+        output = renderer(root, options)
+    elif renderer == 'html':
         output = lib.cmark_render_html(root, options, extensions)
     elif renderer == 'xml':
         output = lib.cmark_render_xml(root, options)

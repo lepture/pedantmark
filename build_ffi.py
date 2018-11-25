@@ -5,6 +5,9 @@ ffi = cffi.FFI()
 with open('pedantmark/cmark_cdef.h', 'r') as f:
     CDEF_H = f.read()
 
+with open('pedantmark/extern_cdef.h', 'r') as f:
+    CDEF_H += f.read()
+
 MODULE_H = '''
 #ifndef CMARK_MODULE_H
 #define CMARK_MODULE_H
@@ -18,6 +21,7 @@ extern "C" {
 #include "cmark-gfm.h"
 #include "cmark-gfm-extension_api.h"
 #include "cmark-gfm-core-extensions.h"
+#include "extern.h"
 
 #ifdef __cplusplus
 }
@@ -60,6 +64,7 @@ cmark-gfm/extensions/ext_scanners.c
 cmark-gfm/extensions/strikethrough.c
 cmark-gfm/extensions/table.c
 cmark-gfm/extensions/tagfilter.c
+pedantmark/extern.c
 '''
 
 ffi.cdef(CDEF_H)

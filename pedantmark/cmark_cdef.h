@@ -65,6 +65,15 @@ cmark_node *cmark_parser_finish(cmark_parser *parser);
 
 typedef struct cmark_syntax_extension cmark_syntax_extension;
 
+// buffer.h
+typedef int32_t bufsize_t;
+typedef struct {
+  cmark_mem *mem;
+  unsigned char *ptr;
+  bufsize_t asize, size;
+} cmark_strbuf;
+void cmark_strbuf_puts(cmark_strbuf *buf, const char *string);
+
 // cmark-gfm-extension_api.h
 cmark_syntax_extension *cmark_find_syntax_extension(const char *name);
 int cmark_parser_attach_syntax_extension(cmark_parser *parser, cmark_syntax_extension *extension);

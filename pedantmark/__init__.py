@@ -13,6 +13,7 @@ from .api import (
     OPT_FULL_INFO_STRING,
     OPT_UNSAFE,
 )
+from .extern import BaseRenderer
 
 __all__ = [
     'markdown', 'html', 'EXTENSIONS',
@@ -28,6 +29,7 @@ __all__ = [
     'OPT_TABLE_PREFER_STYLE_ATTRIBUTES',
     'OPT_FULL_INFO_STRING',
     'OPT_UNSAFE',
+    'BaseRenderer',
 ]
 
 __version__ = '0.1'
