@@ -9,8 +9,9 @@ def escape_html(text, secure=False):
 
 class BaseRenderer(object):
     LITERAL_TYPES = {
-        'document', 'html_block', 'text', 'strikethrough',
-        'code', 'html_inline', 'paragraph',
+        'document', 'html_block', 'paragraph',
+        'text', 'strikethrough',
+        'code', 'html_inline', 'softbreak',
     }
 
     def __init__(self):
@@ -39,7 +40,7 @@ class BaseRenderer(object):
         return out + b'>' + text + b'</code></pre>\n'
 
     def paragraph(self, text):
-        return b'<p>' + text + b'</p>'
+        return b'<p>' + text + b'</p>\n'
 
     def text(self, text):
         return text
@@ -49,6 +50,11 @@ class BaseRenderer(object):
 
     def code(self, text):
         return b'<code>' + text + b'</code>'
+
+    def softbreak(self, option):
+        if option == b'br':
+            return self.thematic_break()
+        return option
 
     def linebreak(self):
         return b'\n'

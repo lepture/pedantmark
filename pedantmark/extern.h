@@ -6,3 +6,10 @@ typedef void (*pedant_render_node_t)(cmark_strbuf *buf, cmark_node *node, const 
 char *cmark_render_pedant(pedant_render_node_t cb, cmark_node *root, int options, void *userdata);
 
 const char *pedant_get_node_type(cmark_node *node);
+
+const char *pedant_get_node_code_info(cmark_node *node);
+const int pedant_get_node_heading_level(cmark_node *node);
+const bool pedant_get_node_list_bullet(cmark_node *node);
+const int pedant_get_node_list_start(cmark_node *node);
+const char *pedant_get_node_link_url(cmark_node *node);
+const char *pedant_get_node_link_title(cmark_node *node);

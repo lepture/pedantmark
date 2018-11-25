@@ -42,7 +42,7 @@ const char *pedant_get_node_type(cmark_node *node) {
   case CMARK_NODE_LIST:
     return "list";
   case CMARK_NODE_ITEM:
-    return "item";
+    return "list_item";
   case CMARK_NODE_CODE_BLOCK:
     return "code_block";
   case CMARK_NODE_HTML_BLOCK:
@@ -80,6 +80,25 @@ const char *pedant_get_node_type(cmark_node *node) {
   return "_unknown";
 }
 
+const char *pedant_get_node_code_info(cmark_node *node) {
+  return node->as.code.info.data;
+}
+const int pedant_get_node_heading_level(cmark_node *node) {
+  return node->as.heading.level;
+}
+const bool pedant_get_node_list_bullet(cmark_node *node) {
+  cmark_list_type list_type = node->as.list.list_type;
+  return list_type == CMARK_BULLET_LIST;
+}
+const int pedant_get_node_list_start(cmark_node *node) {
+  return node->as.list.start;
+}
+const char *pedant_get_node_link_url(cmark_node *node) {
+  return node->as.link.url.data;
+}
+const char *pedant_get_node_link_title(cmark_node *node) {
+  return node->as.link.title.data;
+}
 
 static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
                          int options, void *userdata) {
@@ -91,6 +110,7 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
     while (next) {
       char *next_s = S_flat_node(cb, next, options, userdata);
       cmark_strbuf_puts(&buf, next_s);
+      free(next_s);
       next = next->next;
     }
     const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
@@ -105,8 +125,11 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
 
     case CMARK_NODE_HTML_BLOCK:
     case CMARK_NODE_HTML_INLINE:
-      // TODO
-      cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      if (options & CMARK_OPT_UNSAFE) {
+        cb(&buf, node, node->as.literal.data, userdata);
+      } else {
+        cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      }
       break;
     case CMARK_NODE_THEMATIC_BREAK:
     case CMARK_NODE_LINEBREAK:
@@ -114,7 +137,7 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
       break;
     case CMARK_NODE_SOFTBREAK:
       if (options & CMARK_OPT_HARDBREAKS) {
-        cb(&buf, node, (const unsigned char *)"<br />\n", userdata);
+        cb(&buf, node, (const unsigned char *)"br", userdata);
       } else if (options & CMARK_OPT_NOBREAKS) {
         cb(&buf, node, (const unsigned char *)" ", userdata);
       } else {
