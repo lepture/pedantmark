@@ -80,47 +80,55 @@ const char *pedant_get_node_type(cmark_node *node) {
   return "_unknown";
 }
 
-struct render_state {
-  cmark_strbuf *buf;
-};
 
-static int S_render_node(pedant_render_node_t cb, cmark_node *node,
-                         cmark_event_type ev_type, struct render_state *state,
+static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
                          int options, void *userdata) {
-  cmark_strbuf *buf = state->buf;
-  bool entering = (ev_type == CMARK_EVENT_ENTER);
 
-  if (entering) {
+  cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
+
+  if (node->first_child) {
+    cmark_node *next = node->first_child;
+    while (next) {
+      char *next_s = S_flat_node(cb, next, options, userdata);
+      cmark_strbuf_puts(&buf, next_s);
+      next = next->next;
+    }
+    const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
+    cb(&buf, node, text, userdata);
+  } else {
     switch (node->type) {
-
+    case CMARK_NODE_CODE_BLOCK:
     case CMARK_NODE_TEXT:
     case CMARK_NODE_CODE:
-    case CMARK_NODE_CODE_BLOCK:
-      cb(buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      break;
+
+    case CMARK_NODE_HTML_BLOCK:
+    case CMARK_NODE_HTML_INLINE:
+      // TODO
+      cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      break;
+    case CMARK_NODE_THEMATIC_BREAK:
+    case CMARK_NODE_LINEBREAK:
+      cb(&buf, node, (const unsigned char *)"", userdata);
+      break;
+    case CMARK_NODE_SOFTBREAK:
+      if (options & CMARK_OPT_HARDBREAKS) {
+        cb(&buf, node, (const unsigned char *)"<br />\n", userdata);
+      } else if (options & CMARK_OPT_NOBREAKS) {
+        cb(&buf, node, (const unsigned char *)" ", userdata);
+      } else {
+        cb(&buf, node, (const unsigned char *)"\n", userdata);
+      }
       break;
     }
   }
 
-  return 1;
+  char *result = (char *)cmark_strbuf_detach(&buf);
+  return result;
 }
 
-char *cmark_render_pedant(pedant_render_node_t cb, cmark_node *root, int options, void *userdata) {
-  char *result;
-
-  cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(root));
-  cmark_event_type ev_type;
-  cmark_node *cur;
-
-  struct render_state state = {&buf};
-
-  cmark_iter *iter = cmark_iter_new(root);
-
-  while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
-    cur = cmark_iter_get_node(iter);
-    S_render_node(cb, cur, ev_type, &state, options, userdata);
-  }
-  result = (char *)cmark_strbuf_detach(&buf);
-
-  cmark_iter_free(iter);
-  return result;
+char *cmark_render_pedant(pedant_render_node_t cb, cmark_node *root,
+                                   int options, void *userdata) {
+  return S_flat_node(cb, root, options, userdata);
 }

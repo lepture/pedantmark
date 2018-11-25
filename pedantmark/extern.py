@@ -9,8 +9,8 @@ def escape_html(text, secure=False):
 
 class BaseRenderer(object):
     LITERAL_TYPES = {
-        'html_block', 'text', 'strikethrough',
-        'code', 'html_inline',
+        'document', 'html_block', 'text', 'strikethrough',
+        'code', 'html_inline', 'paragraph',
     }
 
     def __init__(self):
@@ -23,6 +23,9 @@ class BaseRenderer(object):
         return lib.cmark_render_pedant(
             lib.pedant_render_node, root, options, self._userdata)
 
+    def document(self, text):
+        return text
+
     def thematic_break(self):
         return b'<br />'
 
@@ -30,7 +33,13 @@ class BaseRenderer(object):
         return text
 
     def code_block(self, text, lang):
-        return b''
+        out = b'<pre><code'
+        if lang:
+            out += b' class="language-' + lang + b'"'
+        return out + b'>' + text + b'</code></pre>\n'
+
+    def paragraph(self, text):
+        return b'<p>' + text + b'</p>'
 
     def text(self, text):
         return text
@@ -58,8 +67,7 @@ def pedant_render_node(buf, node, text, userdata):
         func = getattr(rndr, node_type)
         result = func(ffi.string(text))
     elif node_type == 'code_block':
-        # TODO
-        result = b''
+        result = rndr.code_block(ffi.string(text), lang=b'python')
 
     if result:
         lib.cmark_strbuf_puts(buf, result)
