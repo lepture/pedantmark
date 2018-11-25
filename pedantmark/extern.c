@@ -89,8 +89,18 @@ static int S_render_node(pedant_render_node_t cb, cmark_node *node,
                          int options, void *userdata) {
   cmark_strbuf *buf = state->buf;
   bool entering = (ev_type == CMARK_EVENT_ENTER);
-  // TODO: text
-  cb(buf, node, entering, options, userdata);
+
+  if (entering) {
+    switch (node->type) {
+
+    case CMARK_NODE_TEXT:
+    case CMARK_NODE_CODE:
+    case CMARK_NODE_CODE_BLOCK:
+      cb(buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+      break;
+    }
+  }
+
   return 1;
 }
 

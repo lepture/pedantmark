@@ -8,28 +8,58 @@ def escape_html(text, secure=False):
 
 
 class BaseRenderer(object):
+    LITERAL_TYPES = {
+        'html_block', 'text', 'strikethrough',
+        'code', 'html_inline',
+    }
+
     def __init__(self):
         self._userdata = ffi.new_handle(self)
 
-    def _unknown(self, node, entering):
-        return '<!-- unknown -->'
+    def _unknown(self):
+        return b'<!-- unknown -->'
 
     def __call__(self, root, options):
         return lib.cmark_render_pedant(
             lib.pedant_render_node, root, options, self._userdata)
 
+    def thematic_break(self):
+        return b'<br />'
+
+    def html_block(self, text):
+        return text
+
+    def code_block(self, text, lang):
+        return b''
+
+    def text(self, text):
+        return text
+
     def strikethrough(self, text):
-        return '<del>' + text + '</del>'
+        return b'<del>' + text + b'</del>'
+
+    def code(self, text):
+        return b'<code>' + text + b'</code>'
+
+    def linebreak(self):
+        return b'\n'
+
+    def html_inline(self, text):
+        return text
 
 
 @ffi.def_extern()
-def pedant_render_node(buf, node, text, options, userdata):
+def pedant_render_node(buf, node, text, userdata):
     rndr = ffi.from_handle(userdata)
     node_type = ffi.string(lib.pedant_get_node_type(node)).decode('utf-8')
 
     result = None
-    if node_type == 'strikethrough':
-        result = rndr.strikethrough(text)
+    if node_type in rndr.LITERAL_TYPES:
+        func = getattr(rndr, node_type)
+        result = func(ffi.string(text))
+    elif node_type == 'code_block':
+        # TODO
+        result = b''
 
     if result:
-        lib.cmark_strbuf_puts(buf, result.encode('utf-8'))
+        lib.cmark_strbuf_puts(buf, result)
