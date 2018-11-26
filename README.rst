@@ -1,16 +1,23 @@
-pedantmark
-==========
+Pedantic Markdown
+=================
+
+.. image:: https://img.shields.io/badge/donate-lepture-ff69b4.svg
+   :target: https://lepture.com/donate
+   :alt: Donate lepture
+.. image:: https://img.shields.io/pypi/wheel/pedantmark.svg
+   :target: https://pypi.python.org/pypi/mistune/
+   :alt: Wheel Status
+
+**pedantmark** is (not only) a python binding for the GitHub's fork of CommonMark (cmark).
+It has also been enhanced to support custom renderers.
 
     Only two maybes I've thought of: Strict Markdown or Pedantic Markdown. "Strict" still doesn't seem right.
 
     -- `John Gruber`_
 
-.. _`John Gruber`: https://twitter.com/gruber/status/507615356295200770)
+.. _`John Gruber`: https://twitter.com/gruber/status/507615356295200770
 
 Ok, let's call it **pedantmark**.
-
-**pedantmark** is (not only) a python binding for the GitHub's fork of CommonMark (cmark).
-It has been enhanced by me (Hsiaoming Yang) to support custom renderers.
 
 .. note::
    If you are a C pro, please help me to improve the C code in this repo.
