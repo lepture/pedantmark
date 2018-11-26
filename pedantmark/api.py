@@ -1,6 +1,4 @@
 from ._cmark import lib, ffi
-from .extern import BaseRenderer
-
 
 #: Include a `data-sourcepos` attribute on all block elements.
 OPT_SOURCEPOS = lib.CMARK_OPT_SOURCEPOS
@@ -49,24 +47,16 @@ OPT_UNSAFE = lib.CMARK_OPT_UNSAFE
 EXTENSIONS = ('table', 'autolink', 'tagfilter', 'strikethrough')
 
 
-def markdown(text, options=None, extensions=None, renderer='html', width=0):
+def markdown(text, options=None, extensions=None, renderer='html',
+             width=0, state=None):
     """Parse text as markdown and render it into other format of string.
 
     :text: string of text.
     :options: list of options for cmark.
     :extensions: list of extensions.
-    :renderer: renderer type, available choices:
-        * html
-        * xml
-        * man
-        * commonmark
-        * plaintext
-        * latex
-    :width: width option for renderers:
-        * man
-        * commonmark
-        * plaintext
-        * latex
+    :renderer: renderer type or HTMLRenderer instance.
+    :width: width option for renderers like man/latext.
+    :state: MarkdownState instance for HTMLRenderer.
     :return: string
     """
     if options is None:
@@ -84,7 +74,8 @@ def markdown(text, options=None, extensions=None, renderer='html', width=0):
         lib.cmark_parser_feed(parser, bytes_text, len(bytes_text))
         root = lib.cmark_parser_finish(parser)
 
-        output = _render_root(renderer, root, _options, _extensions, width)
+        output = _render_root(
+            renderer, root, _options, _extensions, width, state)
     finally:
         lib.cmark_parser_free(parser)
     return output
@@ -127,9 +118,9 @@ def get_options(*options):
     return value
 
 
-def _render_root(renderer, root, options, extensions, width):
-    if isinstance(renderer, BaseRenderer):
-        output = renderer(root, options)
+def _render_root(renderer, root, options, extensions, width, state):
+    if callable(renderer):
+        return renderer(root, options, state)
     elif renderer == 'html':
         output = lib.cmark_render_html(root, options, extensions)
     elif renderer == 'xml':

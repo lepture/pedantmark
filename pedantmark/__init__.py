@@ -13,7 +13,10 @@ from .api import (
     OPT_FULL_INFO_STRING,
     OPT_UNSAFE,
 )
-from .extern import BaseRenderer
+from .extern import (
+    escape_html, escape_href,
+    MarkdownState, HTMLRenderer,
+)
 
 __all__ = [
     'markdown', 'html', 'EXTENSIONS',
@@ -29,7 +32,9 @@ __all__ = [
     'OPT_TABLE_PREFER_STYLE_ATTRIBUTES',
     'OPT_FULL_INFO_STRING',
     'OPT_UNSAFE',
-    'BaseRenderer',
+    'escape_html', 'escape_href',
+    'MarkdownState', 'HTMLRenderer',
 ]
 
 __version__ = '0.1'
+__author__ = 'Hsiaoming Yang <me@lepture.com>'

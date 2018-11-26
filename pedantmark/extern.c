@@ -7,17 +7,22 @@
 #include "buffer.h"
 #include "houdini.h"
 #include "syntax_extension.h"
+#include "cmark-gfm-core-extensions.h"
 #include "extern.h"
-
-static void h_escape_html0(cmark_strbuf *dest, const unsigned char *source,
-                           size_t len, int secure) {
-  houdini_escape_html0(dest, source, len, secure);
-}
 
 unsigned char *escape_html(const unsigned char *source, size_t len, int secure) {
   cmark_mem *mem = cmark_get_default_mem_allocator();
   cmark_strbuf buf = CMARK_BUF_INIT(mem);
-  h_escape_html0(&buf, source, len, secure);
+  houdini_escape_html0(&buf, source, len, secure);
+  unsigned char *data = buf.ptr;
+  cmark_strbuf_free(&buf);
+  return data;
+}
+
+unsigned char *escape_href(const unsigned char *source, size_t len) {
+  cmark_mem *mem = cmark_get_default_mem_allocator();
+  cmark_strbuf buf = CMARK_BUF_INIT(mem);
+  houdini_escape_href(&buf, source, len);
   unsigned char *data = buf.ptr;
   cmark_strbuf_free(&buf);
   return data;
@@ -75,13 +80,17 @@ const char *pedant_get_node_type(cmark_node *node) {
     return "link";
   case CMARK_NODE_IMAGE:
     return "image";
+  case CMARK_NODE_FOOTNOTE_REFERENCE:
+    return "footnote_ref";
+  case CMARK_NODE_FOOTNOTE_DEFINITION:
+    return "footnote_def";
   }
 
   return "_unknown";
 }
 
 const char *pedant_get_node_code_info(cmark_node *node) {
-  return node->as.code.info.data;
+  return (const char *)node->as.code.info.data;
 }
 const int pedant_get_node_heading_level(cmark_node *node) {
   return node->as.heading.level;
@@ -94,10 +103,40 @@ const int pedant_get_node_list_start(cmark_node *node) {
   return node->as.list.start;
 }
 const char *pedant_get_node_link_url(cmark_node *node) {
-  return node->as.link.url.data;
+  return (const char *)node->as.link.url.data;
 }
 const char *pedant_get_node_link_title(cmark_node *node) {
-  return node->as.link.title.data;
+  return (const char *)node->as.link.title.data;
+}
+const bool pedant_get_node_paragraph_tight(cmark_node *node) {
+  cmark_node *parent = cmark_node_parent(node);
+  cmark_node *grandparent = cmark_node_parent(parent);
+  if (grandparent != NULL && grandparent->type == CMARK_NODE_LIST) {
+    return grandparent->as.list.tight;
+  } else {
+    return false;
+  }
+}
+const char *pedant_get_node_table_cell_info(cmark_node *node) {
+  static char buffer[3];
+  bool is_head = cmark_gfm_extensions_get_table_row_is_header(node->parent);
+  uint8_t *alignments = cmark_gfm_extensions_get_table_alignments(node->parent->parent);
+
+  if (is_head) {
+    buffer[0] = 'h';
+  } else {
+    buffer[0] = 'd';
+  }
+
+  cmark_node *n;
+  int i = 0;
+  for (n = node->parent->first_child; n; n = n->next, ++i)
+    if (n == node)
+      break;
+
+  buffer[1] = alignments[i];
+  buffer[2] = '\0';
+  return buffer;
 }
 
 static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
@@ -105,45 +144,44 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
 
   cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
 
-  if (node->first_child) {
-    cmark_node *next = node->first_child;
-    while (next) {
-      char *next_s = S_flat_node(cb, next, options, userdata);
-      cmark_strbuf_puts(&buf, next_s);
-      free(next_s);
-      next = next->next;
-    }
-    const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
-    cb(&buf, node, text, userdata);
-  } else {
-    switch (node->type) {
-    case CMARK_NODE_CODE_BLOCK:
-    case CMARK_NODE_TEXT:
-    case CMARK_NODE_CODE:
+  switch (node->type) {
+  case CMARK_NODE_CODE:
+  case CMARK_NODE_TEXT:
+    cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+    break;
+  case CMARK_NODE_IMAGE:
+    cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+    break;
+  case CMARK_NODE_CODE_BLOCK:
+    cb(&buf, node, escape_html(node->as.code.literal.data, node->as.code.literal.len, 0), userdata);
+    break;
+  case CMARK_NODE_HTML_BLOCK:
+  case CMARK_NODE_HTML_INLINE:
+    if (options & CMARK_OPT_UNSAFE) {
+      cb(&buf, node, node->as.literal.data, userdata);
+    } else {
       cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
-      break;
-
-    case CMARK_NODE_HTML_BLOCK:
-    case CMARK_NODE_HTML_INLINE:
-      if (options & CMARK_OPT_UNSAFE) {
-        cb(&buf, node, node->as.literal.data, userdata);
-      } else {
-        cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
+    }
+    break;
+  case CMARK_NODE_THEMATIC_BREAK:
+  case CMARK_NODE_LINEBREAK:
+  case CMARK_NODE_SOFTBREAK:
+    cb(&buf, node, (const unsigned char *)"", userdata);
+    break;
+  case CMARK_NODE_FOOTNOTE_REFERENCE:
+    cb(&buf, node, node->as.literal.data, userdata);
+    break;
+  default:
+    if (node->first_child) {
+      cmark_node *next = node->first_child;
+      while (next) {
+        char *next_s = S_flat_node(cb, next, options, userdata);
+        cmark_strbuf_puts(&buf, next_s);
+        free(next_s);
+        next = next->next;
       }
-      break;
-    case CMARK_NODE_THEMATIC_BREAK:
-    case CMARK_NODE_LINEBREAK:
-      cb(&buf, node, (const unsigned char *)"", userdata);
-      break;
-    case CMARK_NODE_SOFTBREAK:
-      if (options & CMARK_OPT_HARDBREAKS) {
-        cb(&buf, node, (const unsigned char *)"br", userdata);
-      } else if (options & CMARK_OPT_NOBREAKS) {
-        cb(&buf, node, (const unsigned char *)" ", userdata);
-      } else {
-        cb(&buf, node, (const unsigned char *)"\n", userdata);
-      }
-      break;
+      const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
+      cb(&buf, node, text, userdata);
     }
   }
 
