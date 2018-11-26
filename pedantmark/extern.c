@@ -7,6 +7,7 @@
 #include "buffer.h"
 #include "houdini.h"
 #include "syntax_extension.h"
+#include "scanners.h"
 #include "cmark-gfm-core-extensions.h"
 #include "extern.h"
 
@@ -103,6 +104,9 @@ const int pedant_get_node_list_start(cmark_node *node) {
   return node->as.list.start;
 }
 const char *pedant_get_node_link_url(cmark_node *node) {
+  if (node->as.code.literal.data != NULL) {
+    return (const char *)node->as.code.literal.data;
+  }
   return (const char *)node->as.link.url.data;
 }
 const char *pedant_get_node_link_title(cmark_node *node) {
@@ -143,6 +147,7 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
                          int options, void *userdata) {
 
   cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
+  char *flat_s;
 
   switch (node->type) {
   case CMARK_NODE_CODE:
@@ -150,6 +155,9 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
     cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
     break;
   case CMARK_NODE_IMAGE:
+    if (!(!(options & CMARK_OPT_UNSAFE) && scan_dangerous_url(&node->as.link.url, 0))) {
+      node->as.code.literal.data = escape_href(node->as.link.url.data, node->as.link.url.len);
+    }
     cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
     break;
   case CMARK_NODE_CODE_BLOCK:
@@ -175,12 +183,17 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
     if (node->first_child) {
       cmark_node *next = node->first_child;
       while (next) {
-        char *next_s = S_flat_node(cb, next, options, userdata);
-        cmark_strbuf_puts(&buf, next_s);
-        free(next_s);
+        flat_s = S_flat_node(cb, next, options, userdata);
+        cmark_strbuf_puts(&buf, flat_s);
+        free(flat_s);
         next = next->next;
       }
       const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
+      if (node->type == CMARK_NODE_LINK &&
+          !(!(options & CMARK_OPT_UNSAFE) &&
+            scan_dangerous_url(&node->as.link.url, 0))) {
+        node->as.code.literal.data = escape_href(node->as.link.url.data, node->as.link.url.len);
+      }
       cb(&buf, node, text, userdata);
     }
   }
