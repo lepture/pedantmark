@@ -184,6 +184,22 @@ footnote_item(self, text, index):
 footnotes(self, text)
 ```
 
+## TOC
+
+To render "Table of Contents", you need to use a `MarkdownState` to record TOC
+contents:
+
+```python
+from pedantmark import MarkdownState
+from pedantmark.toc import render_toc
+
+# only record level 1 ~ 3 headings
+state = MarkdownState(toc_level=3)
+
+markdown(text, renderer=HTMLRenderer(), state)
+render_toc(state.toc)
+```
+
 ## Author & License
 
 This library is created by Hsiaming Yang, licensed under BSD.
