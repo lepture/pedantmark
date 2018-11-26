@@ -31,9 +31,9 @@ OPT_STRIKETHROUGH_DOUBLE_TILDE = lib.CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE
 
 #: Use style attributes to align table cells instead of align attributes.
 OPT_TABLE_PREFER_STYLE_ATTRIBUTES = lib.CMARK_OPT_TABLE_PREFER_STYLE_ATTRIBUTES
+
 #: Include the remainder of the info string in code blocks in
 #: a separate attribute.
-
 OPT_FULL_INFO_STRING = lib.CMARK_OPT_FULL_INFO_STRING
 
 #: Allow raw HTML and unsafe links, `javascript:`, `vbscript:`, `file:`,
