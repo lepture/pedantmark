@@ -55,7 +55,7 @@ def markdown(text, options=None, extensions=None, renderer='html',
     :options: list of options for cmark.
     :extensions: list of extensions.
     :renderer: renderer type or HTMLRenderer instance.
-    :width: width option for renderers like man/latext.
+    :width: width option for renderers like man/latex.
     :state: MarkdownState instance for HTMLRenderer.
     :return: string
     """

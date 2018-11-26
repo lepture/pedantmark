@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import re
-import sys
 from setuptools import setup
-from setuptools.command.build_ext import build_ext
 
 _version_re = re.compile(r"__version__ = '(.*)'")
 
