@@ -37,7 +37,9 @@ MESS_INDENT = '''
 
 #### d
 
-# e
+#### e
+
+# f
 '''
 
 MESS_HTML = '''
@@ -48,11 +50,12 @@ MESS_HTML = '''
 <li><a href="#toc-3">c</a>
 <ul>
 <li><a href="#toc-4">d</a></li>
-</ul>
-</li>
-</ul>
-</li>
 <li><a href="#toc-5">e</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#toc-6">f</a></li>
 </ul>
 '''
 
@@ -71,3 +74,7 @@ def test_mess_indent():
     markdown(MESS_INDENT, renderer=HTMLRenderer(), state=state)
     toc = render_toc(state.toc)
     assert toc.strip() == MESS_HTML.strip()
+
+
+def test_none():
+    assert render_toc([]) == ''

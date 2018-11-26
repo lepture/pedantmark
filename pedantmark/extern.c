@@ -104,13 +104,10 @@ const int pedant_get_node_list_start(cmark_node *node) {
   return node->as.list.start;
 }
 const char *pedant_get_node_link_url(cmark_node *node) {
-  if (node->as.code.literal.data != NULL) {
-    return (const char *)node->as.code.literal.data;
-  }
   return (const char *)node->as.link.url.data;
 }
 const char *pedant_get_node_link_title(cmark_node *node) {
-  return (const char *)node->as.link.title.data;
+  return (const char *)escape_html(node->as.link.title.data, node->as.link.title.len, 0);
 }
 const bool pedant_get_node_paragraph_tight(cmark_node *node) {
   cmark_node *parent = cmark_node_parent(node);
@@ -143,21 +140,28 @@ const char *pedant_get_node_table_cell_info(cmark_node *node) {
   return buffer;
 }
 
-static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
-                         int options, void *userdata) {
+static char *S_flat_node(pedant_render_node_t cb, cmark_node *node, int options,
+                         bool render_plain, void *userdata) {
 
   cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
   char *flat_s;
 
+  if (render_plain) {
+    switch (node->type) {
+    case CMARK_NODE_TEXT:
+    case CMARK_NODE_CODE:
+    case CMARK_NODE_HTML_INLINE:
+      return (char *)escape_html(node->as.literal.data, node->as.literal.len, 0);
+    case CMARK_NODE_LINEBREAK:
+    case CMARK_NODE_SOFTBREAK:
+      return " ";
+    }
+    return "";
+  }
+
   switch (node->type) {
   case CMARK_NODE_CODE:
   case CMARK_NODE_TEXT:
-    cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
-    break;
-  case CMARK_NODE_IMAGE:
-    if (!(!(options & CMARK_OPT_UNSAFE) && scan_dangerous_url(&node->as.link.url, 0))) {
-      node->as.code.literal.data = escape_href(node->as.link.url.data, node->as.link.url.len);
-    }
     cb(&buf, node, escape_html(node->as.literal.data, node->as.literal.len, 0), userdata);
     break;
   case CMARK_NODE_CODE_BLOCK:
@@ -181,19 +185,16 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
     break;
   default:
     if (node->first_child) {
+      // FIXME
+      // bool next_plain = node->type == CMARK_NODE_IMAGE;
       cmark_node *next = node->first_child;
       while (next) {
-        flat_s = S_flat_node(cb, next, options, userdata);
+        flat_s = S_flat_node(cb, next, options, 0, userdata);
         cmark_strbuf_puts(&buf, flat_s);
         free(flat_s);
         next = next->next;
       }
       const unsigned char *text = (const unsigned char *)cmark_strbuf_detach(&buf);
-      if (node->type == CMARK_NODE_LINK &&
-          !(!(options & CMARK_OPT_UNSAFE) &&
-            scan_dangerous_url(&node->as.link.url, 0))) {
-        node->as.code.literal.data = escape_href(node->as.link.url.data, node->as.link.url.len);
-      }
       cb(&buf, node, text, userdata);
     }
   }
@@ -203,6 +204,6 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node,
 }
 
 char *cmark_render_pedant(pedant_render_node_t cb, cmark_node *root,
-                                   int options, void *userdata) {
-  return S_flat_node(cb, root, options, userdata);
+                          int options, void *userdata) {
+  return S_flat_node(cb, root, options, 0, userdata);
 }

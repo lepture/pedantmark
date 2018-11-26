@@ -71,3 +71,12 @@ def test_markdown_invalid():
     except ValueError:
         success = False
     assert success is False
+
+
+def test_invalid_extension():
+    try:
+        pedantmark.markdown(TEXT, extensions=['invalid'])
+        success = True
+    except ValueError:
+        success = False
+    assert success is False

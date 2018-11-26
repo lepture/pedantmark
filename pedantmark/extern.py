@@ -28,6 +28,7 @@ class HTMLRenderer(object):
         'text', 'emph', 'strong', 'strikethrough',
         'code', 'html_inline', 'footnote_ref',
     }
+    DANGEROUS_SCHEMES = (b'javascript:', b'vbscript:')
 
     def __init__(self, highlight=None, hardbreaks=False, nobreaks=False):
         self._highlight = highlight
@@ -36,6 +37,9 @@ class HTMLRenderer(object):
 
     def _unknown(self):
         return b'<!-- unknown -->'
+
+    def _is_dangerous_url(self, url):
+        return url.startswith(self.DANGEROUS_SCHEMES)
 
     def __call__(self, root, options, state=None):
         if state is None:
@@ -221,8 +225,11 @@ class HTMLRenderer(object):
         :param text: text content for description.
         :param title: title content for `title` attribute.
         """
-        # autolink url ended with \n
-        url = url.strip()
+        if self._is_dangerous_url(url):
+            url = b''
+        else:
+            # autolink url ended with \n
+            url = url.strip()
         out = b'<a href="' + url + b'"'
         if title:
             out += b' title="' + title + b'"'
@@ -235,6 +242,8 @@ class HTMLRenderer(object):
         :param alt: alt text of the image.
         :param title: title text of the image.
         """
+        if self._is_dangerous_url(src):
+            return b'<!-- dangerous image -->'
         out = b'<img src="' + src + b'"'
         if alt:
             out += b' alt="' + alt + b'"'

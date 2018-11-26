@@ -23,6 +23,11 @@ setup(
     license='BSD',
     packages=['pedantmark'],
     include_package_data=True,
+    install_requires=["cffi>=1.11.0"],
+    setup_requires=["cffi>=1.11.0"],
+    cffi_modules=["build_ffi.py:ffi"],
+    tests_require=['nose'],
+    test_suite='nose.collector',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
@@ -38,8 +43,5 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Text Processing :: Markup',
         'Topic :: Software Development :: Libraries :: Python Modules',
-    ],
-    install_requires=["cffi>=1.11.0"],
-    setup_requires=["cffi>=1.11.0"],
-    cffi_modules=["build_ffi.py:ffi"],
+    ]
 )

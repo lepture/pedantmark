@@ -23,4 +23,8 @@ clean-docs:
 docs:
 	@$(MAKE) -C docs html
 
+coverage:
+	@coverage run --source=pedantmark setup.py -q nosetests
+	@coverage html
+
 .PHONY: build
