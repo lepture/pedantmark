@@ -13,4 +13,4 @@ const char *pedant_get_node_link_url(cmark_node *node);
 const char *pedant_get_node_link_title(cmark_node *node);
 const bool pedant_get_node_paragraph_tight(cmark_node *node);
 const char *pedant_get_node_table_cell_info(cmark_node *node);
-extern "Python" void pedant_render_node(cmark_strbuf *, cmark_node *, const char *, void *);
+extern "Python" void pedant_render_node(cmark_strbuf *, cmark_node *, const unsigned char *, void *);
