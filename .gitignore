@@ -14,5 +14,12 @@ __pycache__/
 .cache
 .pytest_cache
 .coverage
-vendors/
 _cmark.c
+
+vendors/*/*
+!vendors/*/src/
+!vendors/*/extensions/
+vendors/*/src/*
+!vendors/*/src/*.h
+vendors/*/extensions/*
+!vendors/*/extensions/*.h

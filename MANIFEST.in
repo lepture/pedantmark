@@ -4,8 +4,9 @@ include setup.py
 include build_ffi.py
 
 recursive-include pedantmark *.c *.h
-recursive-include cmark-gfm/src *.c *.h
-recursive-include cmark-gfm/extensions *.c *.h
+recursive-include cmark-gfm/src *.c *.h *.inc
+recursive-include cmark-gfm/extensions *.c *.h *.inc
+recursive-include vendors *.h
 
 # Include cmark licensing information
 include cmark-gfm/COPYING

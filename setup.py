@@ -15,15 +15,6 @@ with open('README.rst') as f:
     long_description = f.read()
 
 
-class custom_build_ext(build_ext):
-    def finalize_options(self):
-        build_ext.finalize_options(self)
-        is_windows = sys.platform == 'win32'
-        is_py2 = sys.version_info[0] < 3
-        if self.compiler is None and is_windows and is_py2:
-            self.compiler = 'mingw32'
-
-
 setup(
     name='pedantmark',
     version=version,
@@ -53,5 +44,4 @@ setup(
     install_requires=["cffi>=1.11.0"],
     setup_requires=["cffi>=1.11.0"],
     cffi_modules=["build_ffi.py:ffi"],
-    cmdclass={'build_ext': custom_build_ext},
 )

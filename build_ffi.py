@@ -1,4 +1,41 @@
+import sys
+import glob
 import cffi
+
+
+INCLUDE_DIRS = [
+    'cmark-gfm/src',
+    'cmark-gfm/extensions',
+    'pedantmark',
+]
+SOURCES_FILES = [
+    f for f in glob.iglob('cmark-gfm/src/*.c') if not f.endswith('main.c')
+]
+SOURCES_FILES.extend(list(glob.iglob('cmark-gfm/extensions/*.c')))
+SOURCES_FILES.append('pedantmark/extern.c')
+
+
+def _compiler_type():
+    import distutils.dist
+    import distutils.ccompiler
+    dist = distutils.dist.Distribution()
+    dist.parse_config_files()
+    cmd = dist.get_command_obj('build')
+    cmd.ensure_finalized()
+    compiler = distutils.ccompiler.new_compiler(compiler=cmd.compiler)
+    return compiler.compiler_type
+
+
+COMPILER_TYPE = _compiler_type()
+if COMPILER_TYPE == 'unix':
+    EXTRA_COMPILE_ARGS = ['-std=c99']
+    INCLUDE_DIRS.append('vendors/unix/src')
+    INCLUDE_DIRS.append('vendors/unix/extensions')
+elif COMPILER_TYPE == 'msvc':
+    EXTRA_COMPILE_ARGS = ['/TP']
+    INCLUDE_DIRS.append('vendors/windows/src')
+    INCLUDE_DIRS.append('vendors/windows/extensions')
+
 
 ffi = cffi.FFI()
 
@@ -30,58 +67,14 @@ extern "C" {
 #endif
 '''
 
-SOURCES_FILES = '''
-cmark-gfm/src/arena.c
-cmark-gfm/src/blocks.c
-cmark-gfm/src/buffer.c
-cmark-gfm/src/cmark.c
-cmark-gfm/src/cmark_ctype.c
-cmark-gfm/src/commonmark.c
-cmark-gfm/src/footnotes.c
-cmark-gfm/src/houdini_href_e.c
-cmark-gfm/src/houdini_html_e.c
-cmark-gfm/src/houdini_html_u.c
-cmark-gfm/src/html.c
-cmark-gfm/src/inlines.c
-cmark-gfm/src/iterator.c
-cmark-gfm/src/latex.c
-cmark-gfm/src/linked_list.c
-cmark-gfm/src/man.c
-cmark-gfm/src/map.c
-cmark-gfm/src/node.c
-cmark-gfm/src/plaintext.c
-cmark-gfm/src/plugin.c
-cmark-gfm/src/references.c
-cmark-gfm/src/registry.c
-cmark-gfm/src/render.c
-cmark-gfm/src/scanners.c
-cmark-gfm/src/syntax_extension.c
-cmark-gfm/src/utf8.c
-cmark-gfm/src/xml.c
-cmark-gfm/extensions/autolink.c
-cmark-gfm/extensions/core-extensions.c
-cmark-gfm/extensions/ext_scanners.c
-cmark-gfm/extensions/strikethrough.c
-cmark-gfm/extensions/table.c
-cmark-gfm/extensions/tagfilter.c
-pedantmark/extern.c
-'''
-
 ffi.cdef(CDEF_H)
 ffi.set_source(
     'pedantmark._cmark',
     MODULE_H,
-    sources=SOURCES_FILES.split(),
-    include_dirs=(
-        'cmark-gfm/src',
-        'cmark-gfm/extensions',
-        'vendors/src',
-        'vendors/extensions',
-        'pedantmark',
-    )
+    sources=SOURCES_FILES,
+    include_dirs=INCLUDE_DIRS,
+    extra_compile_args=EXTRA_COMPILE_ARGS,
 )
 
 if __name__ == '__main__':
-    import subprocess
-    subprocess.call(['cmake', '../cmark-gfm'], cwd='vendors')
     ffi.compile(verbose=True)
