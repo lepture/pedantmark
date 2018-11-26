@@ -14,8 +14,7 @@ typedef struct cmark_mem {
 
 typedef void (*cmark_free_func) (cmark_mem *mem, void *user_data);
 
-typedef struct _cmark_llist
-{
+typedef struct _cmark_llist {
   struct _cmark_llist *next;
   void         *data;
 } cmark_llist;
@@ -35,7 +34,6 @@ const char *cmark_version_string();
 
 char *cmark_markdown_to_html(const char *text, size_t len, int options);
 cmark_node *cmark_parse_document(const char *buffer, size_t len, int options);
-cmark_node_type cmark_node_get_type(cmark_node *node);
 
 char *cmark_render_xml(cmark_node *root, int options);
 char *cmark_render_html(cmark_node *root, int options, cmark_llist *extensions);
