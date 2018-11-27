@@ -2,6 +2,11 @@ import pedantmark
 from pedantmark import markdown, HTMLRenderer
 
 
+def test_none():
+    rv = markdown('\n', renderer=HTMLRenderer())
+    assert rv == ''
+
+
 def test_strong():
     rv = markdown('**a**', renderer=HTMLRenderer())
     assert rv.strip() == '<p><strong>a</strong></p>'
@@ -37,16 +42,56 @@ def test_image():
     rv = markdown('![a](</a>)', renderer=HTMLRenderer())
     assert rv.strip() == '<p><img src="/a" alt="a" /></p>'
 
-    # rv = markdown('![a](</a> "b")', renderer=HTMLRenderer())
-    # assert rv.strip() == '<p><img src="/a" alt="a" title="b" /></p>'
+    rv = markdown('![**a**](</a> "b")', renderer=HTMLRenderer())
+    assert rv.strip() == '<p><img src="/a" alt="a" title="b" /></p>'
 
     rv = markdown('![a](<javascript:void> "b")', renderer=HTMLRenderer())
     assert rv.strip() == '<p><!-- dangerous image --></p>'
 
 
+def test_html_inline():
+    rv = markdown('a <i>i</i>', renderer=HTMLRenderer())
+    assert '&lt;i&gt;' in rv
+
+    rv = markdown(
+        'a <i>i</i>',
+        options=[pedantmark.OPT_UNSAFE],
+        renderer=HTMLRenderer()
+    )
+    assert '<i>i</i>' in rv
+
+
+def test_html_block():
+    rv = markdown('<div>\na\n</div>', renderer=HTMLRenderer())
+    assert '&lt;div&gt;' in rv
+
+    rv = markdown(
+        '<div>\na\n</div>',
+        options=[pedantmark.OPT_UNSAFE],
+        renderer=HTMLRenderer()
+    )
+    assert '<div>' in rv
+
+
 def test_thematic_break():
     rv = markdown('***', renderer=HTMLRenderer())
     assert rv.strip() == '<hr />'
+
+
+def test_linebreak():
+    rv = markdown('a  \nb\n', renderer=HTMLRenderer())
+    assert rv.strip() == '<p>a<br />\nb</p>'
+
+
+def test_softbreak():
+    rv = markdown('a\nb\n', renderer=HTMLRenderer())
+    assert 'a\nb' in rv
+
+    rv = markdown('a\nb\n', renderer=HTMLRenderer(hardbreaks=True))
+    assert '<br />' in rv
+
+    rv = markdown('a\nb\n', renderer=HTMLRenderer(nobreaks=True))
+    assert 'a b' in rv
 
 
 def test_block_quote():

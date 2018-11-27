@@ -140,24 +140,41 @@ const char *pedant_get_node_table_cell_info(cmark_node *node) {
   return buffer;
 }
 
-static char *S_flat_node(pedant_render_node_t cb, cmark_node *node, int options,
-                         bool render_plain, void *userdata) {
-
-  cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
-  char *flat_s;
-
-  if (render_plain) {
+static int S_plain_node(cmark_strbuf *buf, cmark_node *node) {
+  if (node->first_child) {
+    cmark_node *next = node->first_child;
+    while (next) {
+      S_plain_node(buf, next);
+      next = next->next;
+    }
+  } else {
     switch (node->type) {
     case CMARK_NODE_TEXT:
     case CMARK_NODE_CODE:
     case CMARK_NODE_HTML_INLINE:
-      return (char *)escape_html(node->as.literal.data, node->as.literal.len, 0);
+      houdini_escape_html0(buf, node->as.literal.data, node->as.literal.len, 0);
+      break;
     case CMARK_NODE_LINEBREAK:
     case CMARK_NODE_SOFTBREAK:
-      return " ";
+      cmark_strbuf_putc(buf, ' ');
+      break;
     }
-    return "";
+    return 1;
   }
+  return 1;
+}
+
+static char *S_flat_node(pedant_render_node_t cb, cmark_node *node, int options,
+                         bool render_plain, void *userdata) {
+
+  cmark_strbuf buf = CMARK_BUF_INIT(cmark_node_mem(node));
+
+  if (render_plain) {
+    S_plain_node(&buf, node);
+    return (char *)cmark_strbuf_detach(&buf);
+  }
+
+  char *flat_s;
 
   switch (node->type) {
   case CMARK_NODE_CODE:
@@ -185,11 +202,10 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node, int options,
     break;
   default:
     if (node->first_child) {
-      // FIXME
-      // bool next_plain = node->type == CMARK_NODE_IMAGE;
+      bool next_plain = node->type == CMARK_NODE_IMAGE;
       cmark_node *next = node->first_child;
       while (next) {
-        flat_s = S_flat_node(cb, next, options, 0, userdata);
+        flat_s = S_flat_node(cb, next, options, next_plain, userdata);
         cmark_strbuf_puts(&buf, flat_s);
         free(flat_s);
         next = next->next;
@@ -199,8 +215,7 @@ static char *S_flat_node(pedant_render_node_t cb, cmark_node *node, int options,
     }
   }
 
-  char *result = (char *)cmark_strbuf_detach(&buf);
-  return result;
+  return (char *)cmark_strbuf_detach(&buf);
 }
 
 char *cmark_render_pedant(pedant_render_node_t cb, cmark_node *root,
